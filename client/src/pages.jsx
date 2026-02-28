@@ -4,6 +4,7 @@ import AuthLayout from "./components/AuthLayout";
 import InputField from "./components/InputField";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const POST_LOGIN_URL = import.meta.env.VITE_POST_LOGIN_URL || "/home";
 
 function toUserMessage(error) {
   if (error?.name === "TypeError" && /fetch/i.test(error?.message || "")) {
@@ -41,7 +42,11 @@ function LoginPage() {
 
       setMessage("Login successful. Redirecting...");
       setTimeout(() => {
-        window.location.href = "https://kodflix-flax.vercel.app/";
+        if (/^https?:\/\//.test(POST_LOGIN_URL)) {
+          window.location.href = POST_LOGIN_URL;
+        } else {
+          window.location.assign(POST_LOGIN_URL);
+        }
       }, 800);
     } catch (error) {
       setMessage(toUserMessage(error));
@@ -192,4 +197,18 @@ function RegisterPage() {
   );
 }
 
-export { LoginPage, RegisterPage };
+function HomePage() {
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-netflixBlack text-white">
+      <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-black" />
+      <main className="relative z-10 mx-auto flex min-h-screen max-w-3xl items-center justify-center px-6">
+        <section className="w-full rounded-md bg-black/70 p-10 text-center shadow-panel">
+          <h2 className="text-4xl font-bold">Welcome to Kodflix</h2>
+          <p className="mt-4 text-zinc-300">Login successful. Your session is active on this domain.</p>
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export { LoginPage, RegisterPage, HomePage };
