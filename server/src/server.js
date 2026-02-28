@@ -11,6 +11,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 let dbReady = false;
 let dbLastError = null;
+
+app.set("trust proxy", 1);
 const configuredOrigins = String(process.env.FRONTEND_URL || "")
   .split(",")
   .map((origin) => origin.trim())

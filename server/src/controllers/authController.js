@@ -10,13 +10,26 @@ function signToken(user) {
   );
 }
 
-function setAuthCookie(res, token) {
-  const isProd = process.env.NODE_ENV === "production";
-  res.cookie("token", token, {
+function isLocalOrigin(origin) {
+  return /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/i.test(String(origin || ""));
+}
+
+function getCookieOptions(req) {
+  const origin = req.headers.origin || "";
+  const local = isLocalOrigin(origin);
+
+  // Cross-site frontend/backend in production requires SameSite=None + Secure.
+  return {
     httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? "none" : "lax",
+    secure: !local,
+    sameSite: local ? "lax" : "none",
     maxAge: 24 * 60 * 60 * 1000
+  };
+}
+
+function setAuthCookie(req, res, token) {
+  res.cookie("token", token, {
+    ...getCookieOptions(req)
   });
 }
 
@@ -80,7 +93,7 @@ export async function login(req, res) {
     }
 
     const token = signToken(user);
-    setAuthCookie(res, token);
+    setAuthCookie(req, res, token);
 
     return res.status(200).json({
       message: "Login successful",
@@ -96,11 +109,8 @@ export async function login(req, res) {
 }
 
 export function logout(req, res) {
-  const isProd = process.env.NODE_ENV === "production";
   res.clearCookie("token", {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: isProd ? "none" : "lax"
+    ...getCookieOptions(req)
   });
 
   return res.status(200).json({ message: "Logged out" });

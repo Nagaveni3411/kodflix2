@@ -7,7 +7,7 @@ const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL
   || (import.meta.env.PROD ? window.location.origin : "http://localhost:5000")
 ).replace(/\/$/, "");
-const POST_LOGIN_URL = import.meta.env.VITE_POST_LOGIN_URL || "/home";
+const POST_LOGIN_URL = import.meta.env.VITE_POST_LOGIN_URL || "https://kodflix-flax.vercel.app/";
 
 function toUserMessage(error) {
   if (error?.name === "TypeError" && /fetch/i.test(error?.message || "")) {
