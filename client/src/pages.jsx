@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "./components/AuthLayout";
 import InputField from "./components/InputField";
@@ -201,13 +201,60 @@ function RegisterPage() {
 }
 
 function HomePage() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadSession() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          method: "GET",
+          credentials: "include"
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.message || `Request failed (${response.status})`);
+        }
+
+        if (!active) return;
+        setUserName(data?.user?.name || "User");
+      } catch (error) {
+        if (!active) return;
+        setMessage(toUserMessage(error));
+        setTimeout(() => navigate("/login", { replace: true }), 900);
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
+
+    loadSession();
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-netflixBlack text-white">
       <div className="absolute inset-0 bg-gradient-to-r from-black via-black/90 to-black" />
       <main className="relative z-10 mx-auto flex min-h-screen max-w-3xl items-center justify-center px-6">
         <section className="w-full rounded-md bg-black/70 p-10 text-center shadow-panel">
-          <h2 className="text-4xl font-bold">Welcome to Kodflix</h2>
-          <p className="mt-4 text-zinc-300">Login successful. Your session is active on this domain.</p>
+          {loading ? (
+            <>
+              <h2 className="text-4xl font-bold">Checking Session...</h2>
+              <p className="mt-4 text-zinc-300">Verifying your login with backend.</p>
+            </>
+          ) : (
+            <>
+              <h2 className="text-4xl font-bold">Welcome to Kodflix</h2>
+              <p className="mt-4 text-zinc-300">Hello {userName}. Your session is active on this domain.</p>
+            </>
+          )}
+          {message ? <p className="mt-4 text-sm text-red-300">{message}</p> : null}
         </section>
       </main>
     </div>

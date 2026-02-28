@@ -9,25 +9,26 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const configuredOrigins = String(process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+const allowVercelPreviews = String(process.env.ALLOW_VERCEL_PREVIEWS || "true").toLowerCase() === "true";
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true;
+  if (configuredOrigins.includes(origin)) return true;
+  if (/^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) return true;
+  if (allowVercelPreviews && /^https:\/\/.*\.vercel\.app$/.test(origin)) return true;
+  return false;
+}
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      const configuredOrigin = process.env.FRONTEND_URL;
-
-      // Allow non-browser tools and same-origin requests.
-      if (!origin) return callback(null, true);
-
-      // Explicitly allow configured frontend origin when provided.
-      if (configuredOrigin && origin === configuredOrigin) {
+      if (isAllowedOrigin(origin)) {
         return callback(null, true);
       }
-
-      // Allow local Vite dev servers on any localhost port.
-      if (/^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) {
-        return callback(null, true);
-      }
-
       return callback(new Error("Not allowed by CORS"));
     },
     credentials: true
@@ -52,9 +53,12 @@ app.use("/api/auth", authRoutes);
 
 (async () => {
   try {
+    if (!process.env.JWT_SECRET) {
+      throw new Error("Missing JWT_SECRET in environment variables");
+    }
     await ensureUsersTable();
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
     console.error("Failed to start server:");
