@@ -51,6 +51,9 @@ function LoginPage() {
       if (!response.ok) {
         throw new Error(data.error || data.message || "Login failed");
       }
+      if (data?.token) {
+        sessionStorage.setItem("kodflix_token", data.token);
+      }
 
       setMessage("Login successful. Redirecting...");
       setTimeout(() => {
@@ -233,9 +236,11 @@ function HomePage() {
       }
 
       try {
+        const token = sessionStorage.getItem("kodflix_token");
         const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
           method: "GET",
-          credentials: "include"
+          credentials: "include",
+          headers: token ? { Authorization: `Bearer ${token}` } : undefined
         });
 
         const data = await response.json();
