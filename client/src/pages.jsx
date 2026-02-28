@@ -3,13 +3,16 @@ import { useNavigate } from "react-router-dom";
 import AuthLayout from "./components/AuthLayout";
 import InputField from "./components/InputField";
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL
-  || (import.meta.env.PROD ? window.location.origin : "http://localhost:5000")
-).replace(/\/$/, "");
-const POST_LOGIN_URL = import.meta.env.VITE_POST_LOGIN_URL || "https://kodflix-flax.vercel.app/";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? "http://localhost:5000" : "")).replace(
+  /\/$/,
+  ""
+);
+const POST_LOGIN_URL = import.meta.env.VITE_POST_LOGIN_URL || "/home";
 
 function toUserMessage(error) {
+  if (!API_BASE_URL) {
+    return "Missing VITE_API_BASE_URL in production. Set it to your backend URL and redeploy.";
+  }
   if (error?.name === "TypeError" && /fetch/i.test(error?.message || "")) {
     return `Cannot reach backend API at ${API_BASE_URL}. Set VITE_API_BASE_URL correctly and redeploy.`;
   }
@@ -29,6 +32,12 @@ function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+
+    if (!API_BASE_URL) {
+      setMessage("Missing VITE_API_BASE_URL in production. Set it in Vercel and redeploy.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
@@ -117,6 +126,12 @@ function RegisterPage() {
     e.preventDefault();
     setLoading(true);
     setMessage("");
+
+    if (!API_BASE_URL) {
+      setMessage("Missing VITE_API_BASE_URL in production. Set it in Vercel and redeploy.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
@@ -210,6 +225,13 @@ function HomePage() {
     let active = true;
 
     async function loadSession() {
+      if (!API_BASE_URL) {
+        setMessage("Missing VITE_API_BASE_URL in production. Set it in Vercel and redeploy.");
+        setLoading(false);
+        setTimeout(() => navigate("/login", { replace: true }), 900);
+        return;
+      }
+
       try {
         const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
           method: "GET",
