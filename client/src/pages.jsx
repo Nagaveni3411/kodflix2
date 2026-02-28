@@ -3,12 +3,15 @@ import { useNavigate } from "react-router-dom";
 import AuthLayout from "./components/AuthLayout";
 import InputField from "./components/InputField";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL
+  || (import.meta.env.PROD ? window.location.origin : "http://localhost:5000")
+).replace(/\/$/, "");
 const POST_LOGIN_URL = import.meta.env.VITE_POST_LOGIN_URL || "/home";
 
 function toUserMessage(error) {
   if (error?.name === "TypeError" && /fetch/i.test(error?.message || "")) {
-    return "Cannot reach backend API. Ensure server is running on http://localhost:5000 and restart both apps.";
+    return `Cannot reach backend API at ${API_BASE_URL}. Set VITE_API_BASE_URL correctly and redeploy.`;
   }
   return error?.message || "Request failed";
 }
