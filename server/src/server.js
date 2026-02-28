@@ -9,6 +9,8 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+let dbReady = false;
+let dbLastError = null;
 const configuredOrigins = String(process.env.FRONTEND_URL || "")
   .split(",")
   .map((origin) => origin.trim())
@@ -46,23 +48,36 @@ app.get("/", (_req, res) => {
 });
 
 app.get("/api/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
+  res.status(200).json({
+    status: "ok",
+    dbReady,
+    jwtConfigured: Boolean(process.env.JWT_SECRET),
+    dbLastError
+  });
 });
 
 app.use("/api/auth", authRoutes);
 
-(async () => {
+async function initializeDatabaseWithRetry() {
   try {
-    if (!process.env.JWT_SECRET) {
-      throw new Error("Missing JWT_SECRET in environment variables");
-    }
     await ensureUsersTable();
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
+    dbReady = true;
+    dbLastError = null;
+    console.log("Database initialization successful");
   } catch (error) {
-    console.error("Failed to start server:");
+    dbReady = false;
+    dbLastError = error?.message || "Database initialization failed";
+    console.error("Database initialization failed. Retrying in 15 seconds...");
     console.error(error);
-    process.exit(1);
+    setTimeout(initializeDatabaseWithRetry, 15000);
   }
-})();
+}
+
+if (!process.env.JWT_SECRET) {
+  console.warn("JWT_SECRET is missing. Login will fail until it is configured.");
+}
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  void initializeDatabaseWithRetry();
+});
