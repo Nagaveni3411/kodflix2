@@ -21,6 +21,10 @@ const allowVercelPreviews = String(process.env.ALLOW_VERCEL_PREVIEWS || "true").
 
 function isAllowedOrigin(origin) {
   if (!origin) return true;
+  if (configuredOrigins.length === 0) {
+    // Safe-ish fallback for deployments where FRONTEND_URL was not configured.
+    return /^https?:\/\/.+$/i.test(origin);
+  }
   if (configuredOrigins.includes(origin)) return true;
   if (/^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin)) return true;
   if (allowVercelPreviews && /^https:\/\/.*\.vercel\.app$/.test(origin)) return true;
@@ -54,7 +58,9 @@ app.get("/api/health", (_req, res) => {
     status: "ok",
     dbReady,
     jwtConfigured: Boolean(process.env.JWT_SECRET),
-    dbLastError
+    dbLastError,
+    corsConfiguredOrigins: configuredOrigins,
+    allowVercelPreviews
   });
 });
 
